@@ -1,0 +1,123 @@
+{
+  "name": "arc-vs-code",
+  "displayName": "arc-vs-code",
+  "description": "A Visual Studio Code Extension that enables editing of ARCs (Annotated Research Contexts), including adding, removing, and editing of investigations, studies, and assays via SWATE and ARCtrl.",
+  "icon": "resources/icon.png",
+
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.94.0"
+  },
+  "publisher": "nfdi4plants",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nfdi4plants/arc-vs-code.git"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "arc-vs-code.start",
+        "title": "Open ARC-VS-CODE Extension"
+      },
+      {
+        "command": "arc-vs-code.edit_investigation",
+        "title": "Edit Investigation"
+      },
+      {
+        "command": "arc-vs-code.add_study",
+        "title": "Add Study"
+      },
+      {
+        "command": "arc-vs-code.edit_study",
+        "title": "Edit Study"
+      },
+      {
+        "command": "arc-vs-code.delete_study",
+        "title": "Delete Study"
+      },
+      {
+        "command": "arc-vs-code.add_assay",
+        "title": "Add Assay"
+      },
+      {
+        "command": "arc-vs-code.edit_assay",
+        "title": "Edit Assay"
+      },
+      {
+        "command": "arc-vs-code.delete_assay",
+        "title": "Delete Assay"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+            "command": "arc-vs-code.edit_investigation",
+            "when": "resourceFilename == isa.investigation.xlsx",
+            "group": "navigation"
+        },
+        {
+            "command": "arc-vs-code.edit_study",
+            "when": "explorerResourceIsFolder && resourceDirname =~ /.*?[\\\\\\\/]studies$/",
+            "group": "navigation@1"
+        },
+        {
+            "command": "arc-vs-code.delete_study",
+            "when": "explorerResourceIsFolder && resourceDirname =~ /.*?[\\\\\\\/]studies$/",
+            "group": "navigation@2"
+        },
+        {
+            "command": "arc-vs-code.add_study",
+            "when": "explorerResourceIsFolder && resourceFilename == studies",
+            "group": "navigation"
+        },
+        {
+            "command": "arc-vs-code.edit_assay",
+            "when": "explorerResourceIsFolder && resourceDirname =~ /.*?[\\\\\\\/]assays$/",
+            "group": "navigation@1"
+        },
+        {
+            "command": "arc-vs-code.delete_assay",
+            "when": "explorerResourceIsFolder && resourceDirname =~ /.*?[\\\\\\\/]assays$/",
+            "group": "navigation@2"
+        },
+        {
+            "command": "arc-vs-code.add_assay",
+            "when": "explorerResourceIsFolder && resourceFilename == assays",
+            "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "build_vue": "npm run build --prefix=./src-vue/",
+    "build_plugin": "./node_modules/vsce/vsce package",
+    "install": "code --uninstall-extension nfdi4plants.arc-vs-code; code --install-extension ./arc-vs-code-1.0.0.vsix",
+    "full": "npm run build_vue;npm run build_plugin;npm run install; code",
+    "full2": "npm run build_plugin;npm run install; code",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src-plugin",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.8",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.94.0",
+    "@typescript-eslint/eslint-plugin": "^8.7.0",
+    "@typescript-eslint/parser": "^8.7.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.11.1",
+    "typescript": "^5.6.2",
+    "vsce": "^2.15.0"
+  }
+}
