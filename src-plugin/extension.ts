@@ -65,9 +65,8 @@ class ARCPanel {
       : undefined;
 
     // If we already have a panel, show it.
-    if (ARCPanel.currentPanel) {
+    if(ARCPanel.currentPanel){
       ARCPanel.currentPanel._panel.reveal(column);
-      await ARCPanel.currentPanel.send({api:'init'});
       return ARCPanel.currentPanel;
     }
 
@@ -80,36 +79,23 @@ class ARCPanel {
     );
     ARCPanel.currentPanel = new ARCPanel(panel, extensionUri);
 
+    await ARCPanel.currentPanel.readARC();
     await ARCPanel.currentPanel.send({api:'init'});
 
     return ARCPanel.currentPanel;
   }
 
-  public static revive(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
-    ARCPanel.currentPanel = new ARCPanel(panel, extensionUri);
-  }
-
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
     this._panel = panel;
+    this._panel.title = 'ARC-VS-CODE';
     this._extensionUri = extensionUri;
 
     // Set the webview's initial html content
-    this._update();
+    this.setHtmlForWebview(this._panel.webview);
 
     // Listen for when the panel is disposed
     // This happens when the user closes the panel or when the panel is closed programmatically
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
-
-    // Update the content based on view changes
-    this._panel.onDidChangeViewState(
-      e => {
-        if (this._panel.visible) {
-          this._update();
-        }
-      },
-      null,
-      this._disposables
-    );
 
     // api listeners
     this._listeners.push(async inMessage=>{
@@ -149,13 +135,11 @@ class ARCPanel {
       null,
       this._disposables
     );
-
-    this.readARC();
   }
 
   public send(outMessage: any): any{
     return new Promise((resolve,reject)=>{
-      outMessage.acid = 1+Math.random();
+      outMessage.acid = outMessage.acid || 1+Math.random();
       const listener = (inMessage:any)=>{
         if(inMessage.acid !== outMessage.acid) return;
         const index = this._listeners.indexOf(listener);
@@ -173,9 +157,9 @@ class ARCPanel {
   }
 
   public async readARC() {
-    const arc_root = vscode.workspace.workspaceFolders?vscode.workspace.workspaceFolders[0].uri.path:'';
     const xlsx_uris = await vscode.workspace.findFiles('**/*.xlsx');
-    this.sendNoWait({api:'read_ARC',xlsx_paths:xlsx_uris.map(i=>i.path.replace(arc_root+'/',''))});
+    const relative_xlsx_uris = xlsx_uris.map(i=>vscode.workspace.asRelativePath(i));
+    await this.send({api:'read_ARC',xlsx_paths:relative_xlsx_uris});
   }
 
   public dispose() {
@@ -192,17 +176,7 @@ class ARCPanel {
     }
   }
 
-  private _update() {
-    const webview = this._panel.webview;
-    return this.__update(webview);
-  }
-
-  private __update(webview: vscode.Webview) {
-    this._panel.title = 'ARC-VS-CODE';
-    this._panel.webview.html = this._getHtmlForWebview(webview);
-  }
-
-  private _getHtmlForWebview(webview: vscode.Webview) {
+  private setHtmlForWebview(webview: vscode.Webview) {
     const scriptUri0 = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, 'dist', 'js', 'app.js')
     );
@@ -215,8 +189,7 @@ class ARCPanel {
     const resourceUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, 'resources')
     );
-
-    return `<!DOCTYPE html>
+    webview.html = `<!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
