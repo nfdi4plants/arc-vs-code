@@ -54,8 +54,7 @@ const VSCODE_API = {
     const contracts = arc.GetReadContracts();
     for(const contract of contracts){
       const response = await VSCODE_API.send({api:'read',path:contract.Path});
-      const buffer = new Uint8Array(response.data.data);
-      contract.DTO = await Xlsx.fromBytes(buffer);
+      contract.DTO = await Xlsx.fromBytes(response.data);
     }
     arc.SetISAFromContracts(contracts);
     iProps.arc = arc;
