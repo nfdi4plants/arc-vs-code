@@ -4,9 +4,9 @@
   "description": "A Visual Studio Code Extension that enables editing of ARCs (Annotated Research Contexts), including adding, removing, and editing of investigations, studies, and assays via SWATE and ARCtrl.",
   "icon": "resources/icon.png",
 
-  "version": "1.0.1",
+  "version": "1.0.2",
   "engines": {
-    "vscode": "^1.94.0"
+    "vscode": "^1.89.0"
   },
   "publisher": "nfdi4plants",
   "license": "MIT",
@@ -111,7 +111,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.8",
     "@types/node": "20.x",
-    "@types/vscode": "^1.94.0",
+    "@types/vscode": "^1.89.0",
     "@typescript-eslint/eslint-plugin": "^8.7.0",
     "@typescript-eslint/parser": "^8.7.0",
     "@vscode/test-cli": "^0.0.10",
