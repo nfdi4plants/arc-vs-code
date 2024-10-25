@@ -194,6 +194,10 @@ class ARCPanel {
       <head>
         <meta charset="UTF-8">
 
+        <meta
+          http-equiv="Content-Security-Policy"
+          content="default-src 'self'; img-src *; script-src * 'unsafe-inline'; font-src *; style-src *; frame-src *;"
+        />
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link href="${styleUri}" rel="stylesheet">
 
