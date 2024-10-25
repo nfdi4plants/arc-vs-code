@@ -100,25 +100,26 @@ class ARCPanel {
     // api listeners
     this._listeners.push(async inMessage=>{
       if(!inMessage.acid || !inMessage.api) return;
-      const arc_root = vscode.workspace.workspaceFolders?vscode.workspace.workspaceFolders[0].uri.path:'';
+      if(!vscode.workspace.workspaceFolders) return;
+      const arc_root = vscode.workspace.workspaceFolders[0].uri;
       switch(inMessage.api){
         case 'read':
           console.log('[VS] read '+inMessage.path);
           const data = await vscode.workspace.fs.readFile(
-            vscode.Uri.file(arc_root+'/'+inMessage.path)
+            vscode.Uri.joinPath(arc_root, inMessage.path)
           );
           return this.sendNoWait({acid:inMessage.acid, data:data});
         case 'write':
           console.log('[VS] write '+inMessage.path);
           await vscode.workspace.fs.writeFile(
-            vscode.Uri.file(arc_root+'/'+inMessage.path),
+            vscode.Uri.joinPath(arc_root, inMessage.path),
             inMessage.data
           );
           return this.sendNoWait({acid:inMessage.acid});
         case 'delete':
           console.log('[VS] delete '+inMessage.path);
           await vscode.workspace.fs.delete(
-            vscode.Uri.file(arc_root+'/'+inMessage.path),
+            vscode.Uri.joinPath(arc_root, inMessage.path),
             {recursive: true, useTrash: false}
           );
           return this.sendNoWait({acid:inMessage.acid});

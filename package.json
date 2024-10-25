@@ -4,7 +4,7 @@
   "description": "A Visual Studio Code Extension that enables editing of ARCs (Annotated Research Contexts), including adding, removing, and editing of investigations, studies, and assays via SWATE and ARCtrl.",
   "icon": "resources/icon.png",
 
-  "version": "1.0.3",
+  "version": "1.0.4",
   "engines": {
     "vscode": "^1.89.0"
   },
@@ -20,6 +20,9 @@
   "activationEvents": [
   ],
   "browser": "./out/extension.js",
+  "capabilities": {
+    "virtualWorkspaces": true
+  },
   "contributes": {
     "commands": [
       {
