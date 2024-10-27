@@ -7,6 +7,7 @@ import {JsonController} from "@nfdi4plants/arctrl";
 const iProps = reactive({
   arc: null,
   loading: false,
+  reading: false,
   show_timeout: false,
   current_identifier: null,
   resources_path: ''
@@ -15,21 +16,6 @@ const iProps = reactive({
 let iframe = ref({});
 
 const VSCODE_API = {
-  swate_init_acid: null,
-
-  init: async inMessage => {
-    if(VSCODE_API.swate_init_acid)
-      return VSCODE_API.send({acid:inMessage.acid, api:'swate_ready'});
-
-    console.log('[VUE] INIT SWATE');
-    VSCODE_API.swate_init_acid = inMessage.acid;
-    iProps.loading = true;
-    iProps.show_timeout = false;
-    setTimeout(()=>iProps.show_timeout=true,4000);
-
-    iframe.value.setAttribute("src", `https://swate-alpha.nfdi4plants.org?is_swatehost=1&random=${parseInt(Math.random()*1000)}`);
-  },
-
   send: outMessage=>{
     return new Promise((resolve)=>{
       outMessage.acid = outMessage.acid || 1+Math.random();
@@ -50,15 +36,23 @@ const VSCODE_API = {
   },
 
   read_ARC: async inMessage=>{
+    console.log('read_ARC',inMessage);
+    iProps.reading = true;
     const arc = ARC.fromFilePaths(inMessage.xlsx_paths);
     const contracts = arc.GetReadContracts();
+    console.log('read_ARC',contracts)
     for(const contract of contracts){
       const response = await VSCODE_API.send({api:'read',path:contract.Path});
-      contract.DTO = await Xlsx.fromBytes(response.data);
+      contract.DTO = await Xlsx.fromBytes(
+        response.data instanceof Uint8Array
+          ? response.data
+          : response.data.data
+        );
     }
     arc.SetISAFromContracts(contracts);
     iProps.arc = arc;
     console.log('[VUE] ARC',[arc,inMessage,contracts]);
+    iProps.reading = false;
     window.vscode.postMessage({acid:inMessage.acid});
   },
 
@@ -164,7 +158,7 @@ const SWATE_API = {
   Init: ()=>{
     console.log('[VUE] SWATE ONLINE');
     iProps.loading = false;
-    VSCODE_API.sendNoWait({acid:VSCODE_API.swate_init_acid});
+    VSCODE_API.sendNoWait({api:'ready'});
   },
   InvestigationToARCitect: jsonString => {
     let i = JsonController.Investigation.fromJsonString(jsonString);
@@ -199,12 +193,15 @@ const swateCommunicator = event => {
 };
 
 const init = ()=>{
-  VSCODE_API.swate_init_acid = null;
-  iProps.loading = false;
   iProps.resources_path = window.resources_path;
 
   window.addEventListener("message", vscodeCommunicator);
   window.addEventListener("message", swateCommunicator);
+
+  iProps.loading = true;
+  iProps.show_timeout = false;
+  setTimeout(()=>iProps.show_timeout=true,4000);
+  iframe.value.setAttribute("src", `https://swate-alpha.nfdi4plants.org?is_swatehost=1&random=${parseInt(Math.random()*1000)}`);
 };
 
 onMounted(init);
@@ -238,6 +235,17 @@ onMounted(init);
         <img :src="`${iProps.resources_path}/nfdi-hero.svg`" style="box-sizing:border-box;width:100%;padding:4em;max-width:600px;"/>
         <div class='text-h4'><span style="border-bottom:0.1em solid #000;">Welcome to the <b>ARC-VS-CODE</b> Extension!</span></div>
         <div class='text-h6' style="line-height:1em;padding-top:0.5em;">You can add, edit, and delete investigations, studies, and assays through the context menu of the explorer.</div>
+
+        <div class="q-pa-md flex flex-center" v-show='iProps.reading'>
+          <q-circular-progress
+            indeterminate
+            rounded
+            size="50px"
+            color="primary"
+            class="q-ma-md"
+          />
+          <div class='text-h6'>Reading ARC</div>
+        </div>
       </div>
     </q-page-container>
   </q-layout>

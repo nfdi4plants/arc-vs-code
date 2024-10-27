@@ -4,7 +4,7 @@
   "description": "A Visual Studio Code Extension that enables editing of ARCs (Annotated Research Contexts), including adding, removing, and editing of investigations, studies, and assays via SWATE and ARCtrl.",
   "icon": "resources/icon.png",
 
-  "version": "1.0.4",
+  "version": "1.1.0",
   "engines": {
     "vscode": "^1.89.0"
   },
@@ -102,7 +102,7 @@
     "vscode:prepublish": "npm run compile",
     "build_vue": "npm run build --prefix=./src-vue/",
     "build_plugin": "node ./node_modules/vsce/vsce package",
-    "install_code": "code --uninstall-extension nfdi4plants.arc-vs-code && code --install-extension ./arc-vs-code-1.0.3.vsix",
+    "install_code": "code --uninstall-extension nfdi4plants.arc-vs-code && code --install-extension ./arc-vs-code-1.1.0.vsix",
     "full": "npm run build_vue && npm run build_plugin && npm run install_code && code",
     "full2": "npm run build_plugin;npm run install_code; code",
     "compile": "tsc -p ./",

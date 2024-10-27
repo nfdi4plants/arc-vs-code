@@ -19,7 +19,9 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.commands.registerCommand(
         'arc-vs-code.'+c,
         async (uri: vscode.Uri)=>{
-          const panel = await ARCPanel.createOrShow(context.extensionUri);
+          await ARCPanel.createOrShow(context.extensionUri);
+          if(!ARCPanel.currentPanel)return;
+          const panel = ARCPanel.currentPanel;
 
           let identifier = uri.path.split('/').pop();
           const suffix = c.split('_').map(x=>x[0].toUpperCase()+x.slice(1)).pop();
@@ -59,33 +61,30 @@ class ARCPanel {
   private _disposables: vscode.Disposable[] = [];
   private _listeners: Array<(inMessage:any) => void> = [];
 
-  public static async createOrShow(extensionUri: vscode.Uri) {
-    const column = vscode.window.activeTextEditor
-      ? vscode.window.activeTextEditor.viewColumn
-      : undefined;
+  public static createOrShow(extensionUri: vscode.Uri) {
+    return new Promise(resolve=>{
+      const column = vscode.window.activeTextEditor
+        ? vscode.window.activeTextEditor.viewColumn
+        : undefined;
 
-    // If we already have a panel, show it.
-    if(ARCPanel.currentPanel){
-      ARCPanel.currentPanel._panel.reveal(column);
-      return ARCPanel.currentPanel;
-    }
+      // If we already have a panel, show it.
+      if(ARCPanel.currentPanel){
+        ARCPanel.currentPanel._panel.reveal(column);
+        return resolve(null);
+      }
 
-    // Otherwise, create a new panel.
-    const panel = vscode.window.createWebviewPanel(
-      ARCPanel.viewType,
-      'ARC-VS-CODE',
-      column || vscode.ViewColumn.One,
-      getWebviewOptions(extensionUri),
-    );
-    ARCPanel.currentPanel = new ARCPanel(panel, extensionUri);
-
-    await ARCPanel.currentPanel.readARC();
-    await ARCPanel.currentPanel.send({api:'init'});
-
-    return ARCPanel.currentPanel;
+      // Otherwise, create a new panel.
+      const panel = vscode.window.createWebviewPanel(
+        ARCPanel.viewType,
+        'ARC-VS-CODE',
+        column || vscode.ViewColumn.One,
+        getWebviewOptions(extensionUri),
+      );
+      ARCPanel.currentPanel = new ARCPanel(panel, extensionUri, resolve);
+    });
   }
 
-  private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+  private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, resolve: Function) {
     this._panel = panel;
     this._panel.title = 'ARC-VS-CODE';
     this._extensionUri = extensionUri;
@@ -103,6 +102,10 @@ class ARCPanel {
       if(!vscode.workspace.workspaceFolders) return;
       const arc_root = vscode.workspace.workspaceFolders[0].uri;
       switch(inMessage.api){
+        case 'ready':
+          console.log('READY');
+          await this.readARC();
+          return resolve(null);
         case 'read':
           console.log('[VS] read '+inMessage.path);
           const data = await vscode.workspace.fs.readFile(
@@ -158,8 +161,26 @@ class ARCPanel {
   }
 
   public async readARC() {
-    const xlsx_uris = await vscode.workspace.findFiles('**/*.xlsx');
+    if(!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length<1) return;
+    const arc_root = vscode.workspace.workspaceFolders[0].uri;
+    const xlsx_uris:Array<vscode.Uri> = [];
+
+    // manually add xlsx files (required by web ide)
+    const addXlsxFiles = async (dir: vscode.Uri) => {
+      const xlsx = (await vscode.workspace.fs.readDirectory( dir )).filter(x=>x[0].endsWith('.xlsx'));
+      for(let xlsx_ of xlsx)
+        xlsx_uris.push(
+          vscode.Uri.joinPath(dir,xlsx_[0])
+        );
+    }
+    await addXlsxFiles(arc_root);
+    for(let p of ['studies','assays']){
+      const p2 = (await vscode.workspace.fs.readDirectory( vscode.Uri.joinPath(arc_root,p) )).filter(x=>x[1]==2);
+      for(let p2_ of p2)
+        await addXlsxFiles(vscode.Uri.joinPath(arc_root,p,p2_[0]));
+    }
     const relative_xlsx_uris = xlsx_uris.map(i=>vscode.workspace.asRelativePath(i));
+    console.log('xlsx',relative_xlsx_uris);
     await this.send({api:'read_ARC',xlsx_paths:relative_xlsx_uris});
   }
 
